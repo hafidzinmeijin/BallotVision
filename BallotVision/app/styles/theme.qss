@@ -58,6 +58,16 @@ QLabel {
     font-weight: 600;
 }
 
+#navCount {
+    background: rgba(251, 191, 36, 0.18);
+    color: #FBBF24;
+    border-radius: 9px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+}
+
 #sidebarStatus, #sidebarProfile {
     background: #151F32;
     border: 1px solid #29364B;
@@ -72,10 +82,10 @@ QLabel {
 #avatar {
     background: #1B2940;
     border: 1px solid #22D3EE;
-    border-radius: 17px;
+    border-radius: 14px;
     color: #22D3EE;
     font-weight: 700;
-    font-size: 11px;
+    font-size: 10px;
 }
 
 #header {
@@ -84,14 +94,19 @@ QLabel {
 }
 
 #headerTitle {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     color: #F1F5F9;
 }
 
 #headerSubtitle {
     color: #94A3B8;
-    font-size: 13px;
+    font-size: 12px;
+}
+
+#headerIndicators {
+    background: transparent;
+    min-height: 36px;
 }
 
 #demoChip {
@@ -99,10 +114,46 @@ QLabel {
     color: #FBBF24;
     border: 1px solid rgba(251, 191, 36, 0.45);
     border-radius: 999px;
-    padding: 5px 12px;
+    padding: 0 14px;
+    min-height: 36px;
+    max-height: 36px;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.6px;
+}
+
+#infoButton {
+    background: #151F32;
+    border: 1px solid #29364B;
+    border-radius: 18px;
+    padding: 0;
+    margin: 0;
+    min-width: 36px;
+    min-height: 36px;
+    max-width: 36px;
+    max-height: 36px;
+}
+
+#infoButton:hover {
+    border-color: #22D3EE;
+}
+
+#profileButton {
+    background: #151F32;
+    border: 1px solid #29364B;
+    border-radius: 12px;
+    min-height: 44px;
+    max-height: 44px;
+}
+
+#profileButton:hover {
+    border-color: #22D3EE;
+}
+
+#profileName {
+    font-size: 12px;
+    font-weight: 700;
+    color: #F1F5F9;
 }
 
 #iconButton {
@@ -110,14 +161,182 @@ QLabel {
     border: 1px solid #29364B;
     border-radius: 10px;
     color: #F1F5F9;
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 32px;
+    min-height: 32px;
     font-size: 15px;
 }
 
 #iconButton:hover {
     border-color: #22D3EE;
     color: #22D3EE;
+}
+
+#locationBar, #compactStatus, #nextActions {
+    background: #151F32;
+    border: 1px solid #29364B;
+    border-radius: 12px;
+}
+
+#nextActions {
+    background: transparent;
+    border: none;
+}
+
+#fieldCaption {
+    color: #64748B;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+#locationValue {
+    color: #F1F5F9;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#locationBar QComboBox#locationCombo,
+QComboBox#locationCombo {
+    min-height: 36px;
+    padding: 4px 36px 4px 12px;
+    background: #151F32;
+    border: 1px solid #29364B;
+    border-radius: 12px;
+}
+
+#locationBar QComboBox#locationCombo:hover,
+QComboBox#locationCombo:hover,
+#locationBar QComboBox#locationCombo:on,
+QComboBox#locationCombo:on {
+    border-color: #22D3EE;
+    background: #1B2940;
+}
+
+#locationBar QComboBox#locationCombo:focus,
+QComboBox#locationCombo:focus {
+    border-color: #22D3EE;
+}
+
+#locationBar QComboBox#locationCombo::drop-down,
+QComboBox#locationCombo::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 32px;
+    border: none;
+    border-left: 1px solid #29364B;
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+#locationBar QComboBox#locationCombo::down-arrow,
+QComboBox#locationCombo::down-arrow {
+    image: none;
+    width: 12px;
+    height: 12px;
+}
+
+#locationBar QComboBox#locationCombo QLineEdit,
+QComboBox#locationCombo QLineEdit {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: #F1F5F9;
+}
+
+#candidateList, #candidateListScroll {
+    background-color: #151F32;
+    background: #151F32;
+    border: none;
+}
+
+#candidateRow {
+    background-color: #151F32;
+    background: #151F32;
+    border: 1px solid #29364B;
+    border-radius: 10px;
+}
+
+#candidateRowDense {
+    background-color: #151F32;
+    background: #151F32;
+    border: none;
+    border-bottom: 1px solid #29364B;
+    border-radius: 0;
+    padding: 0;
+}
+
+#candidateName {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#candidateVotes {
+    color: #22D3EE;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+#voteShareBar {
+    background: #1B2940;
+    border: none;
+    border-radius: 4px;
+    max-height: 8px;
+}
+
+#voteShareBar::chunk {
+    background: #22D3EE;
+    border-radius: 4px;
+}
+
+#voteShareBarDense {
+    background: #1B2940;
+    border: none;
+    border-radius: 3px;
+    max-height: 5px;
+    min-height: 5px;
+}
+
+#voteShareBarDense::chunk {
+    background: #22D3EE;
+    border-radius: 3px;
+}
+
+#metricIcon {
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.28);
+    border-radius: 10px;
+}
+
+#metricIcon[tone="layers"] {
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.28);
+}
+
+#metricIcon[tone="shield"] {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+#metricIcon[tone="alert"] {
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.32);
+}
+
+#metricIcon[tone="about"], #metricIcon[tone="gear"] {
+    background: rgba(34, 211, 238, 0.10);
+    border: 1px solid rgba(34, 211, 238, 0.22);
+}
+
+#eventRow {
+    background: #1B2940;
+    border: 1px solid #29364B;
+    border-radius: 10px;
+}
+
+#eventTime {
+    color: #22D3EE;
+    font-size: 11px;
+    font-weight: 700;
 }
 
 #toast {
@@ -134,7 +353,7 @@ QLabel {
 #card, #statCard {
     background: #151F32;
     border: 1px solid #29364B;
-    border-radius: 14px;
+    border-radius: 12px;
 }
 
 #statValue {
@@ -310,8 +529,16 @@ QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus {
 }
 
 QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
     border: none;
     width: 28px;
+}
+
+QComboBox::down-arrow {
+    image: url(__CHEVRON_DOWN__);
+    width: 12px;
+    height: 12px;
 }
 
 QComboBox QAbstractItemView {
@@ -368,7 +595,7 @@ QHeaderView::section {
     border: none;
     border-bottom: 1px solid #29364B;
     border-right: 1px solid #29364B;
-    padding: 8px;
+    padding: 6px;
     font-weight: 600;
 }
 
@@ -485,10 +712,15 @@ QMessageBox {
     background: rgba(34, 211, 238, 0.08);
 }
 
-#previewFrame {
+#previewFrame, #cameraPreview {
     background: #1B2940;
     border: 1px solid #29364B;
     border-radius: 12px;
+}
+
+#cameraPreview {
+    border-style: dashed;
+    color: #94A3B8;
 }
 
 #detailPanel {

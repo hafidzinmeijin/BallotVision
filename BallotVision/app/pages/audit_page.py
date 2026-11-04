@@ -35,29 +35,37 @@ class AuditPage(QScrollArea):
         body.setObjectName("pageBody")
         self.setWidget(body)
         root = QVBoxLayout(body)
-        root.setContentsMargins(28, 18, 28, 28)
-        root.setSpacing(16)
+        root.setContentsMargins(24, 12, 24, 16)
+        root.setSpacing(10)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
+        description = QLabel(
+            "View a record of important actions performed in BallotVision, such as ballot processing, "
+            "review decisions, and result exports. This helps election officers track what happened and when, "
+            "and supports transparency and accountability."
+        )
+        description.setWordWrap(True)
+        description.setObjectName("mutedLabel")
+        root.addWidget(description)
         root.addWidget(
             NoticeBar(
-                "Prototype audit log only. This is local sample data, not a tamper-proof production system.",
+                "This page currently shows demonstration and prototype events. It is not an official SPR election record.",
                 "warning",
             )
         )
 
         stats = QHBoxLayout()
         stats.setSpacing(12)
-        self.total = StatCard("Total Activities", "0")
-        self.processed = StatCard("Ballots Processed", "0")
-        self.reviews = StatCard("Reviews Completed", "0")
-        self.system = StatCard("System Events", "0")
-        for card in (self.total, self.processed, self.reviews, self.system):
-            stats.addWidget(card)
+        self.total = StatCard("Activities", "0", "All recorded events", icon="about")
+        self.reviews = StatCard("Reviews logged", "0", "Officer decisions", icon="shield", icon_color="#34D399")
+        stats.addWidget(self.total)
+        stats.addWidget(self.reviews)
+        stats.addStretch()
         root.addLayout(stats)
 
         filters = QHBoxLayout()
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Search activity, user, or related ID")
+        self.search.setPlaceholderText("Search action, user, or ID")
         self.search.textChanged.connect(self.refresh)
         self.type_filter = QComboBox()
         self.type_filter.addItems(
@@ -87,7 +95,7 @@ class AuditPage(QScrollArea):
         split = QHBoxLayout()
         split.setSpacing(12)
         table_card = Card()
-        table_card.layout.addWidget(SectionTitle("Activity table", "Select a row to inspect the record"))
+        table_card.layout.addWidget(SectionTitle("Activity", "Select a row to read the full record"))
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
             ["Timestamp", "Activity ID", "User", "Action", "Related Ballot / Batch", "Status"]
@@ -137,13 +145,9 @@ class AuditPage(QScrollArea):
 
     def refresh(self) -> None:
         events = self.store.data["audit"]
-        stats = self.store.data["stats"]
         self.total.set_value(format_number(len(events)))
-        self.processed.set_value(format_number(stats["total_processed"]))
         reviews = sum(1 for event in events if event["type"] == "Review Decision")
-        system = sum(1 for event in events if event["type"] == "System Event")
         self.reviews.set_value(format_number(reviews))
-        self.system.set_value(format_number(system))
 
         rows = self._visible_events()
         time_format = self.store.settings().get("time_format", "24-hour")

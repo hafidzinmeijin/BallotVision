@@ -14,8 +14,40 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 
-from app.core.constants import CANDIDATES, DEFAULT_SETTINGS
+from app.core.candidates import DEMO_VOTE_COUNTS, apply_result_status, build_candidate_records
+from app.core.constituencies import default_location, dun_applicable, find_state, location_key
+from app.core.constants import (
+    CANDIDATES,
+    DEFAULT_SETTINGS,
+    DEMO_BATCH_ID,
+    DEMO_ELECTION_NAME,
+)
 from app.core.utils import settings_path
+
+DEMO_STATE, DEMO_DUN_CODE, DEMO_DUN_NAME = default_location()
+DEMO_LOCATION_KEY = location_key(DEMO_STATE, DEMO_DUN_CODE)
+
+
+def empty_session(kind: str = "none") -> dict:
+    hours = ("08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00")
+    return {
+        "kind": kind,
+        "stats": {
+            "total_processed": 0,
+            "valid": 0,
+            "flagged": 0,
+            "accuracy": 0.0,
+            "rejected": 0,
+            "pending_reviews": 0,
+        },
+        "candidates": build_candidate_records(state_code="—", dun_code="—"),
+        "classification": {"valid": 0, "rejected": 0, "needs_review": 0},
+        "activity": [(hour, 0) for hour in hours],
+        "batches": [],
+        "processing_events": [],
+        "flagged": [],
+        "imported": [],
+    }
 
 
 def _dt(days_ago: int, hour: int, minute: int) -> datetime:
@@ -32,7 +64,7 @@ def build_sample_data() -> dict:
             "reason": "Faint mark near box edge",
             "confidence": 71,
             "status": "Pending Review",
-            "detected": "Candidate B",
+            "detected": "Rizal Purnama",
             "notes": "",
         },
         {
@@ -41,8 +73,10 @@ def build_sample_data() -> dict:
             "reason": "Possible double mark",
             "confidence": 64,
             "status": "Pending Review",
-            "detected": "Candidate A",
+            "detected": "Amalia Suria",
             "notes": "",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
         {
             "id": "BLT-2055",
@@ -50,8 +84,10 @@ def build_sample_data() -> dict:
             "reason": "Low contrast scan",
             "confidence": 69,
             "status": "Pending Review",
-            "detected": "Candidate C",
+            "detected": "Nora Bentara",
             "notes": "",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
         {
             "id": "BLT-2062",
@@ -59,8 +95,10 @@ def build_sample_data() -> dict:
             "reason": "Mark outside designated box",
             "confidence": 73,
             "status": "Pending Review",
-            "detected": "Candidate A",
+            "detected": "Amalia Suria",
             "notes": "",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
         {
             "id": "BLT-2070",
@@ -68,8 +106,10 @@ def build_sample_data() -> dict:
             "reason": "Ambiguous stroke direction",
             "confidence": 66,
             "status": "Pending Review",
-            "detected": "Candidate D",
+            "detected": "Faizal Ombak",
             "notes": "",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
         {
             "id": "BLT-2077",
@@ -77,18 +117,20 @@ def build_sample_data() -> dict:
             "reason": "Fold line across candidate row",
             "confidence": 62,
             "status": "Pending Review",
-            "detected": "Candidate B",
+            "detected": "Rizal Purnama",
             "notes": "",
         },
         {
             "id": "BLT-1988",
             "batch": "BATCH-17",
-            "reason": "Smudge near Candidate C",
+            "reason": "Smudge near Nora Bentara",
             "confidence": 74,
             "status": "Reviewed",
-            "detected": "Candidate C",
+            "detected": "Nora Bentara",
             "decision": "Confirm Detected Mark",
             "notes": "Officer confirmed intended mark.",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
         {
             "id": "BLT-1994",
@@ -96,9 +138,11 @@ def build_sample_data() -> dict:
             "reason": "Overvote suspected",
             "confidence": 58,
             "status": "Reviewed",
-            "detected": "Candidate A",
+            "detected": "Amalia Suria",
             "decision": "Mark as Rejected",
             "notes": "Two marks of similar density.",
+            "location_key": DEMO_LOCATION_KEY,
+            "data_kind": "prototype_demo",
         },
     ]
 
@@ -141,7 +185,7 @@ def build_sample_data() -> dict:
             "related": "BLT-1988",
             "type": "Review Decision",
             "status": "Completed",
-            "detail": "Decision: Confirm Detected Mark for Candidate C.",
+            "detail": "Decision: Confirm Detected Mark for Nora Bentara.",
         },
         {
             "id": "AUD-1005",
@@ -195,40 +239,106 @@ def build_sample_data() -> dict:
         },
     ]
 
+    for item in flagged:
+        item["location_key"] = DEMO_LOCATION_KEY
+        item["data_kind"] = "prototype_demo"
+
+    demo_session = empty_session("prototype_demo")
+    demo_session.update(
+        {
+            "stats": {
+                "total_processed": 2450,
+                "valid": 2391,
+                "flagged": 42,
+                "accuracy": 98.4,
+                "rejected": 17,
+                "pending_reviews": 42,
+            },
+            "candidates": build_candidate_records(
+                state_code="JHR",
+                dun_code=DEMO_DUN_CODE,
+                votes=DEMO_VOTE_COUNTS,
+                dataset_type="simulated",
+            ),
+            "classification": {"valid": 2391, "rejected": 17, "needs_review": 42},
+            "activity": [
+                ("08:00", 180),
+                ("09:00", 310),
+                ("10:00", 420),
+                ("11:00", 390),
+                ("12:00", 210),
+                ("13:00", 350),
+                ("14:00", 410),
+                ("15:00", 180),
+            ],
+            "batches": [
+                {"id": DEMO_BATCH_ID, "time": "Today, 10:04", "images": 94, "valid": 88, "flagged": 5, "status": "Completed"},
+                {"id": "BATCH-019", "time": "Today, 09:12", "images": 110, "valid": 104, "flagged": 4, "status": "Completed"},
+                {"id": "BATCH-018", "time": "Yesterday, 16:22", "images": 86, "valid": 81, "flagged": 4, "status": "Completed"},
+                {"id": "BATCH-017", "time": "Yesterday, 09:18", "images": 120, "valid": 116, "flagged": 3, "status": "Reviewed"},
+                {"id": "BATCH-016", "time": "13 Oct 2026", "images": 102, "valid": 99, "flagged": 2, "status": "Completed"},
+            ],
+            "processing_events": [
+                {
+                    "time": "10:18",
+                    "description": "Batch summary generated for officer briefing",
+                    "batch": DEMO_BATCH_ID,
+                    "status": "Completed",
+                },
+                {
+                    "time": "10:12",
+                    "description": "Officer review completed for two sample ballots",
+                    "batch": "BATCH-017",
+                    "status": "Completed",
+                },
+                {
+                    "time": "10:08",
+                    "description": "Unclear ballots flagged for officer verification",
+                    "batch": DEMO_BATCH_ID,
+                    "status": "Needs Review",
+                },
+                {
+                    "time": "10:06",
+                    "description": "Demonstration rules applied — not AI classification",
+                    "batch": DEMO_BATCH_ID,
+                    "status": "Completed",
+                },
+                {
+                    "time": "10:05",
+                    "description": "Image processing completed for the imported sample set",
+                    "batch": DEMO_BATCH_ID,
+                    "status": "Completed",
+                },
+                {
+                    "time": "10:04",
+                    "description": "Sample batch imported for this demonstration",
+                    "batch": DEMO_BATCH_ID,
+                    "status": "Completed",
+                },
+            ],
+            "flagged": flagged,
+            "imported": [],
+        }
+    )
+
     return {
-        "stats": {
-            "total_processed": 2450,
-            "valid": 2391,
-            "flagged": 42,
-            "accuracy": 98.4,
-            "rejected": 17,
-            "pending_reviews": 42,
+        "location_sessions": {DEMO_LOCATION_KEY: demo_session} if DEMO_LOCATION_KEY else {},
+        "stats": copy.deepcopy(demo_session["stats"]),
+        "candidates": copy.deepcopy(demo_session["candidates"]),
+        "classification": copy.deepcopy(demo_session["classification"]),
+        "activity": copy.deepcopy(demo_session["activity"]),
+        "batches": copy.deepcopy(demo_session["batches"]),
+        "processing_events": copy.deepcopy(demo_session["processing_events"]),
+        "election": {
+            "name": DEMO_ELECTION_NAME,
+            "negeri": DEMO_STATE,
+            "dun": f"{DEMO_DUN_CODE} {DEMO_DUN_NAME}",
+            "dun_code": DEMO_DUN_CODE,
+            "dun_name": DEMO_DUN_NAME,
+            "batch": DEMO_BATCH_ID,
+            "data_kind": "prototype_demo",
         },
-        "candidates": [
-            {"name": CANDIDATES[0], "votes": 912},
-            {"name": CANDIDATES[1], "votes": 754},
-            {"name": CANDIDATES[2], "votes": 481},
-            {"name": CANDIDATES[3], "votes": 244},
-        ],
-        "classification": {"valid": 2391, "rejected": 17, "needs_review": 42},
-        "activity": [
-            ("08:00", 180),
-            ("09:00", 310),
-            ("10:00", 420),
-            ("11:00", 390),
-            ("12:00", 210),
-            ("13:00", 350),
-            ("14:00", 410),
-            ("15:00", 180),
-        ],
-        "batches": [
-            {"id": "BATCH-20", "time": "Today, 10:04", "images": 94, "valid": 88, "flagged": 5, "status": "Completed"},
-            {"id": "BATCH-19", "time": "Today, 09:12", "images": 110, "valid": 104, "flagged": 4, "status": "Completed"},
-            {"id": "BATCH-18", "time": "Yesterday, 16:22", "images": 86, "valid": 81, "flagged": 4, "status": "Completed"},
-            {"id": "BATCH-17", "time": "Yesterday, 09:18", "images": 120, "valid": 116, "flagged": 3, "status": "Reviewed"},
-            {"id": "BATCH-16", "time": "13 Oct 2026", "images": 102, "valid": 99, "flagged": 2, "status": "Completed"},
-        ],
-        "flagged": flagged,
+        "flagged": copy.deepcopy(demo_session["flagged"]),
         "audit": audit,
         "imported": [],
         "notifications": [
@@ -262,6 +372,7 @@ class Store(QObject):
         super().__init__()
         self._data = build_sample_data()
         self._load_settings()
+        self._sync_election_from_settings()
 
     @property
     def data(self) -> dict:
@@ -302,10 +413,130 @@ class Store(QObject):
         self.message.emit("Settings restored to defaults.", "info")
         self.changed.emit()
 
+    def current_location_key(self) -> str | None:
+        election = self._data["election"]
+        return location_key(election.get("negeri", ""), election.get("dun_code") or "")
+
+    def _session_for(self, key: str | None) -> dict:
+        if not key:
+            return empty_session("not_applicable")
+        sessions = self._data.setdefault("location_sessions", {})
+        if key not in sessions:
+            kind = "prototype_demo" if key == DEMO_LOCATION_KEY else "none"
+            sessions[key] = empty_session(kind)
+        return sessions[key]
+
+    def _publish_session(self) -> None:
+        key = self.current_location_key()
+        session = self._session_for(key)
+        self._data["stats"] = session["stats"]
+        self._data["candidates"] = session["candidates"]
+        self._data["classification"] = session["classification"]
+        self._data["activity"] = session["activity"]
+        self._data["batches"] = session["batches"]
+        self._data["processing_events"] = session["processing_events"]
+        self._data["flagged"] = session["flagged"]
+        self._data["imported"] = session["imported"]
+        election = self._data["election"]
+        state = find_state(election.get("negeri", ""))
+        state_code = state["code"] if state else "—"
+        dun_code = election.get("dun_code") or "—"
+        if not session.get("candidates"):
+            session["candidates"] = build_candidate_records(state_code=state_code, dun_code=dun_code)
+        for record in session["candidates"]:
+            record["state_code"] = state_code
+            record["dun_code"] = dun_code
+            record["vote_count"] = int(record.get("vote_count", record.get("votes", 0)))
+            record["name"] = record.get("candidate_name", record.get("name", ""))
+            record["votes"] = record["vote_count"]
+        pending = int(session["stats"].get("pending_reviews", 0))
+        apply_result_status(
+            session["candidates"],
+            reviews_outstanding=pending,
+            allow_leading=pending == 0 and any(int(item.get("vote_count", 0)) > 0 for item in session["candidates"]),
+        )
+        self._data["candidates"] = session["candidates"]
+        if not dun_applicable(election.get("negeri", "")):
+            election["data_kind"] = "not_applicable"
+            election["batch"] = "—"
+        elif session["kind"] == "none" and not session["stats"]["total_processed"] and not session["imported"]:
+            election["data_kind"] = "none"
+            election["batch"] = "—"
+        elif session["kind"] == "imported_session":
+            election["data_kind"] = "imported_session"
+            election["batch"] = session["batches"][0]["id"] if session["batches"] else "IMPORTED"
+        else:
+            election["data_kind"] = session["kind"]
+            if session["batches"]:
+                election["batch"] = session["batches"][0]["id"]
+
+    def _sync_election_from_settings(self) -> None:
+        settings = self._data["settings"]
+        negeri = settings.get("demo_negeri", DEMO_STATE)
+        state = find_state(negeri)
+        if state is None:
+            negeri, dun_code, dun_name = DEMO_STATE, DEMO_DUN_CODE, DEMO_DUN_NAME
+        elif not state.get("dun_applicable"):
+            dun_code, dun_name = "", ""
+        else:
+            dun_code = settings.get("demo_dun_code", DEMO_DUN_CODE)
+            seats = {item["code"]: item for item in state.get("constituencies", [])}
+            if dun_code not in seats:
+                first = state["constituencies"][0]
+                dun_code, dun_name = first["code"], first["name"]
+            else:
+                dun_name = seats[dun_code]["name"]
+        self._data["election"] = {
+            "name": DEMO_ELECTION_NAME,
+            "negeri": negeri,
+            "dun": f"{dun_code} {dun_name}".strip(),
+            "dun_code": dun_code,
+            "dun_name": dun_name,
+            "batch": DEMO_BATCH_ID,
+            "data_kind": "prototype_demo",
+        }
+        self._publish_session()
+
+    def set_demo_location(self, negeri: str, dun_code: str = "", dun_name: str = "") -> None:
+        state = find_state(negeri)
+        if state is None:
+            return
+        if not state.get("dun_applicable"):
+            dun_code, dun_name = "", ""
+        else:
+            seats = {item["code"]: item for item in state.get("constituencies", [])}
+            if dun_code not in seats:
+                first = state["constituencies"][0] if state["constituencies"] else {"code": "", "name": ""}
+                dun_code, dun_name = first["code"], first["name"]
+            else:
+                dun_name = seats[dun_code]["name"]
+        self._data["settings"]["demo_negeri"] = negeri
+        self._data["settings"]["demo_dun_code"] = dun_code
+        self._data["settings"]["demo_dun_name"] = dun_name
+        self._data["election"]["negeri"] = negeri
+        self._data["election"]["dun_code"] = dun_code
+        self._data["election"]["dun_name"] = dun_name
+        self._data["election"]["dun"] = f"{dun_code} {dun_name}".strip()
+        self._publish_session()
+        self.changed.emit()
+
+    def add_processing_event(self, description: str, batch: str, status: str) -> None:
+        event = {
+            "time": datetime.now().strftime("%H:%M"),
+            "description": description,
+            "batch": batch,
+            "status": status,
+        }
+        session = self._session_for(self.current_location_key())
+        session["processing_events"].insert(0, event)
+        session["processing_events"] = session["processing_events"][:8]
+        self._data["processing_events"] = session["processing_events"]
+
     def reset_demo_data(self) -> None:
         saved_settings = copy.deepcopy(self._data["settings"])
         self._data = build_sample_data()
         self._data["settings"] = saved_settings
+        self._sync_election_from_settings()
         self.add_audit(
             user="Sahira",
             action="Cleared demonstration data",
@@ -330,16 +561,25 @@ class Store(QObject):
             "detail": detail,
         }
         self._data["audit"].insert(0, event)
+        self.changed.emit()
 
     def add_imported(self, paths: list[str]) -> None:
-        existing = {item["path"] for item in self._data["imported"]}
+        session = self._session_for(self.current_location_key())
+        existing = {item["path"] for item in session["imported"]}
         added = 0
         for path in paths:
             path = str(path)
             if path in existing:
                 continue
-            self._data["imported"].append({"path": path, "name": Path(path).name})
+            session["imported"].append(
+                {
+                    "path": path,
+                    "name": Path(path).name,
+                    "location_key": self.current_location_key(),
+                }
+            )
             added += 1
+        self._data["imported"] = session["imported"]
         if added:
             self.add_audit(
                 user="Sahira",
@@ -357,62 +597,93 @@ class Store(QObject):
         self.changed.emit()
 
     def clear_imported(self) -> None:
-        self._data["imported"] = []
+        session = self._session_for(self.current_location_key())
+        session["imported"] = []
+        self._data["imported"] = session["imported"]
         self.message.emit("Image selection cleared.", "info")
         self.changed.emit()
 
-    def complete_simulation(self, processed_count: int) -> None:
-        stats = self._data["stats"]
-        stats["total_processed"] += processed_count
-        flagged_new = max(1, processed_count // 4)
-        valid_new = max(0, processed_count - flagged_new)
-        stats["valid"] += valid_new
-        stats["flagged"] += flagged_new
-        stats["pending_reviews"] += flagged_new
-        self._data["classification"]["valid"] = stats["valid"]
-        self._data["classification"]["needs_review"] = stats["flagged"]
+    def complete_import_processing(self, processed_count: int, cancelled: bool = False) -> None:
+        location = self.current_location_key()
+        election = self._data["election"]
+        batch_id = f"IMP-{datetime.now().strftime('%H%M%S')}"
+        session = self._session_for(location)
+        if session["kind"] in {"none", "not_applicable"}:
+            session["kind"] = "imported_session"
+        if cancelled:
+            self.add_processing_event("Prototype processing cancelled by officer", batch_id, "Needs Review")
+            self.add_audit(
+                user="Sahira",
+                action="Cancelled prototype processing",
+                related=batch_id,
+                event_type="Processing Simulation",
+                status="Warning",
+                detail="Officer cancelled the demonstration processing workflow. No recognition was performed.",
+            )
+            self.message.emit("Processing cancelled. No ballot was classified.", "warning")
+            self._publish_session()
+            self.changed.emit()
+            return
 
-        for index in range(flagged_new):
+        stats = session["stats"]
+        stats["total_processed"] += processed_count
+        stats["flagged"] += processed_count
+        stats["pending_reviews"] += processed_count
+        session["classification"]["needs_review"] = stats["flagged"]
+        session["batches"].insert(
+            0,
+            {
+                "id": batch_id,
+                "time": datetime.now().strftime("%d %b %Y, %H:%M"),
+                "images": processed_count,
+                "valid": 0,
+                "flagged": processed_count,
+                "status": "Needs Review",
+            },
+        )
+        imported = list(session["imported"])
+        for index in range(processed_count):
             self._data["ballot_counter"] += 1
             ballot_id = f"BLT-{self._data['ballot_counter']}"
-            detected = CANDIDATES[index % len(CANDIDATES)]
-            self._data["flagged"].insert(
+            source = imported[index]["name"] if index < len(imported) else "imported image"
+            session["flagged"].insert(
                 0,
                 {
                     "id": ballot_id,
-                    "batch": "BATCH-DEMO",
-                    "reason": "Simulated low-confidence mark",
-                    "confidence": 60 + (index * 3) % 15,
+                    "batch": batch_id,
+                    "reason": "Imported image queued for officer verification. No recognition engine was used.",
+                    "confidence": None,
                     "status": "Pending Review",
-                    "detected": detected,
+                    "detected": "",
                     "notes": "",
                     "simulated": True,
+                    "location_key": location,
+                    "data_kind": "imported_session",
+                    "source_file": source,
                 },
             )
-
+        self.add_processing_event(
+            f"Imported image set queued for verification ({processed_count} file(s))",
+            batch_id,
+            "Needs Review",
+        )
         self.add_audit(
             user="System",
-            action="Started processing simulation",
-            related="SCAN",
+            action="Prototype processing finished",
+            related=batch_id,
             event_type="Processing Simulation",
             status="Completed",
             detail=(
-                f"Simulated processing of {processed_count} image(s). "
-                "Results are not AI predictions."
+                f"Demonstration workflow finished for {processed_count} image(s) at "
+                f"{election.get('negeri')} {election.get('dun')}. "
+                "Images were not classified as valid. No AI recognition was performed."
             ),
         )
-        self.add_audit(
-            user="System",
-            action="Flagged ballots for review",
-            related="BATCH-DEMO",
-            event_type="Flagged Ballot",
-            status="Completed",
-            detail=f"{flagged_new} simulated ballot(s) added to the review queue.",
-        )
         self.message.emit(
-            "Simulated processing finished. These results are not AI predictions.",
+            "Prototype processing finished. Images were sent for officer verification — not classified as valid.",
             "warning",
         )
+        self._publish_session()
         self.changed.emit()
 
     def submit_review(self, ballot_id: str, decision: str, notes: str) -> None:
@@ -441,10 +712,14 @@ class Store(QObject):
                 self._data["classification"]["valid"] += 1
                 self._data["stats"]["flagged"] = max(0, self._data["stats"]["flagged"] - 1)
                 self._data["classification"]["needs_review"] = self._data["stats"]["flagged"]
+                detected = target.get("detected", "")
                 for candidate in self._data["candidates"]:
-                    if candidate["name"] == target.get("detected"):
-                        candidate["votes"] += 1
+                    names = {candidate.get("candidate_name"), candidate.get("name")}
+                    if detected in names:
+                        candidate["vote_count"] = int(candidate.get("vote_count", 0)) + 1
+                        candidate["votes"] = candidate["vote_count"]
                         break
+        self._publish_session()
 
         self.add_audit(
             user="Sahira",

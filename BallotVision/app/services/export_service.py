@@ -14,13 +14,28 @@ def export_results_csv(path: str, store_data: dict) -> None:
     valid = store_data["stats"]["valid"]
     with Path(path).open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
+        election = store_data.get("election", {})
         writer.writerow(["NOTICE", NOTICE])
         writer.writerow(["Generated", datetime.now().isoformat(timespec="seconds")])
+        writer.writerow(["Election", election.get("name", "")])
+        writer.writerow(["Negeri", election.get("negeri", "")])
+        writer.writerow(["DUN", election.get("dun", "")])
+        writer.writerow(["Dataset", election.get("data_kind", "simulated")])
+        writer.writerow(["Percentages", "Share of valid votes"])
         writer.writerow([])
-        writer.writerow(["Candidate", "Votes", "Percentage of valid votes"])
+        writer.writerow(["Candidate ID", "Candidate", "Party", "Votes", "Percentage of valid votes"])
         for item in store_data["candidates"]:
-            percent = (item["votes"] / valid * 100) if valid else 0
-            writer.writerow([item["name"], item["votes"], f"{percent:.1f}%"])
+            votes = int(item.get("vote_count", item.get("votes", 0)))
+            percent = (votes / valid * 100) if valid else 0
+            writer.writerow(
+                [
+                    item.get("candidate_id", ""),
+                    item.get("candidate_name", item.get("name", "")),
+                    item.get("party_name", ""),
+                    votes,
+                    f"{percent:.1f}%",
+                ]
+            )
         writer.writerow([])
         writer.writerow(["Metric", "Value"])
         stats = store_data["stats"]
@@ -37,17 +52,25 @@ def export_results_summary(path: str, store_data: dict) -> None:
         NOTICE,
         f"Generated: {datetime.now().isoformat(timespec='seconds')}",
         "",
+        f"Election: {store_data.get('election', {}).get('name', '')}",
+        f"Negeri: {store_data.get('election', {}).get('negeri', '')}",
+        f"DUN: {store_data.get('election', {}).get('dun', '')}",
+        f"Dataset: {store_data.get('election', {}).get('data_kind', '')}",
         f"Total ballots counted: {stats['total_processed']}",
         f"Valid votes: {stats['valid']}",
         f"Rejected ballots: {stats['rejected']}",
         f"Pending reviews: {stats['pending_reviews']}",
         "",
-        "Candidate totals (fictional):",
+        "Candidate totals (fictional demonstration names):",
+        "Percentages are of valid votes.",
     ]
     valid = stats["valid"]
     for item in store_data["candidates"]:
-        percent = (item["votes"] / valid * 100) if valid else 0
-        lines.append(f"- {item['name']}: {item['votes']} ({percent:.1f}%)")
+        votes = int(item.get("vote_count", item.get("votes", 0)))
+        percent = (votes / valid * 100) if valid else 0
+        lines.append(
+            f"- {item.get('candidate_name', item.get('name', ''))}: {votes} ({percent:.1f}%)"
+        )
     lines.append("")
     lines.append("This file is a UI prototype export. It is not an official election result.")
     Path(path).write_text("\n".join(lines), encoding="utf-8")

@@ -18,7 +18,7 @@ NAVY = QColor("#151F32")
 class _ChartBase(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setMinimumHeight(240)
+        self.setMinimumHeight(168)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -40,25 +40,29 @@ class ActivityChart(_ChartBase):
     def draw_chart(self, painter: QPainter) -> None:
         if not self.points:
             return
-        left, top, right, bottom = 44, 16, self.width() - 16, self.height() - 36
+        left, top, right, bottom = 48, 10, self.width() - 12, self.height() - 34
         width = max(1, right - left)
         height = max(1, bottom - top)
         max_value = max(value for _label, value in self.points) or 1
 
         painter.setPen(QPen(GRID, 1))
-        for step in range(5):
-            y = top + height * step / 4
+        for step in range(4):
+            y = top + height * step / 3
             painter.drawLine(left, int(y), right, int(y))
-            label = int(max_value * (1 - step / 4))
+            label = int(max_value * (1 - step / 3))
             painter.setPen(MUTED)
             painter.setFont(QFont("Segoe UI", 8))
-            painter.drawText(QRectF(4, y - 8, 38, 16), Qt.AlignmentFlag.AlignRight, str(label))
+            painter.drawText(QRectF(2, y - 8, 42, 16), Qt.AlignmentFlag.AlignRight, str(label))
             painter.setPen(QPen(GRID, 1))
 
-        bar_width = width / (len(self.points) * 1.6)
+        painter.setPen(MUTED)
+        painter.setFont(QFont("Segoe UI", 7))
+        painter.drawText(QRectF(2, 0, 42, 12), Qt.AlignmentFlag.AlignLeft, "Ballots")
+
+        bar_width = width / (len(self.points) * 1.7)
         for index, (label, value) in enumerate(self.points):
-            x = left + (index + 0.3) * (width / len(self.points))
-            bar_h = (value / max_value) * (height - 8)
+            x = left + (index + 0.32) * (width / len(self.points))
+            bar_h = (value / max_value) * (height - 6)
             rect = QRectF(x, bottom - bar_h, bar_width, bar_h)
             path = QPainterPath()
             path.addRoundedRect(rect, 4, 4)
@@ -66,10 +70,18 @@ class ActivityChart(_ChartBase):
             painter.setPen(MUTED)
             painter.setFont(QFont("Segoe UI", 8))
             painter.drawText(
-                QRectF(x - 10, bottom + 4, bar_width + 20, 18),
+                QRectF(x - 10, bottom + 3, bar_width + 20, 16),
                 Qt.AlignmentFlag.AlignHCenter,
                 label,
             )
+
+        painter.setPen(MUTED)
+        painter.setFont(QFont("Segoe UI", 7))
+        painter.drawText(
+            QRectF(left, self.height() - 14, width, 12),
+            Qt.AlignmentFlag.AlignHCenter,
+            "Hour (demonstration data)",
+        )
 
 
 class ClassificationChart(_ChartBase):
@@ -83,8 +95,8 @@ class ClassificationChart(_ChartBase):
 
     def draw_chart(self, painter: QPainter) -> None:
         total = sum(item[1] for item in self.slices) or 1
-        size = min(self.width() * 0.52, self.height() - 24)
-        rect = QRectF(18, (self.height() - size) / 2, size, size)
+        size = min(self.width() * 0.48, self.height() - 16)
+        rect = QRectF(12, (self.height() - size) / 2, size, size)
         start = 90 * 16
         for _name, value, color in self.slices:
             span = int(value / total * 360 * 16)
@@ -98,11 +110,11 @@ class ClassificationChart(_ChartBase):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(hole)
         painter.setPen(TEXT)
-        painter.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        painter.setFont(QFont("Segoe UI", 8, QFont.Weight.DemiBold))
         painter.drawText(hole, Qt.AlignmentFlag.AlignCenter, "Demo\nmix")
 
-        legend_x = rect.right() + 18
-        y = rect.center().y() - 36
+        legend_x = rect.right() + 14
+        y = rect.center().y() - 32
         for name, value, color in self.slices:
             painter.setBrush(color)
             painter.setPen(Qt.PenStyle.NoPen)
@@ -111,37 +123,44 @@ class ClassificationChart(_ChartBase):
             painter.setFont(QFont("Segoe UI", 9))
             percent = value / total * 100
             painter.drawText(
-                QRectF(legend_x + 16, y - 4, self.width() - legend_x - 24, 20),
+                QRectF(legend_x + 16, y - 4, self.width() - legend_x - 20, 20),
                 Qt.AlignmentFlag.AlignLeft,
                 f"{name}  {percent:.1f}%",
             )
-            y += 26
+            y += 24
 
 
 class CandidateBarChart(_ChartBase):
     def __init__(self, candidates: list[dict], parent=None) -> None:
         super().__init__(parent)
         self.candidates = candidates
+        self.setMinimumHeight(120)
 
     def draw_chart(self, painter: QPainter) -> None:
         if not self.candidates:
             return
-        max_votes = max(item["votes"] for item in self.candidates) or 1
-        top = 12
-        left = 128
-        right = self.width() - 64
-        row_h = (self.height() - 24) / len(self.candidates)
-        for index, item in enumerate(self.candidates):
+        values = [int(item.get("vote_count", item.get("votes", 0))) for item in self.candidates]
+        max_votes = max(values) or 1
+        top = 8
+        left = 148
+        right = self.width() - 56
+        row_h = (self.height() - 16) / len(self.candidates)
+        ordered = sorted(
+            self.candidates,
+            key=lambda item: -int(item.get("vote_count", item.get("votes", 0))),
+        )
+        for index, item in enumerate(ordered):
             y = top + index * row_h
+            votes = int(item.get("vote_count", item.get("votes", 0)))
             painter.setPen(TEXT)
-            painter.setFont(QFont("Segoe UI", 9))
+            painter.setFont(QFont("Segoe UI", 8))
             painter.drawText(
-                QRectF(8, y, left - 16, row_h - 8),
+                QRectF(6, y, left - 14, row_h - 8),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
-                item["name"],
+                item.get("candidate_name", item.get("name", "")),
             )
-            bar_w = (item["votes"] / max_votes) * max(1, right - left)
-            rect = QRectF(left, y + 8, bar_w, row_h - 20)
+            bar_w = (votes / max_votes) * max(1, right - left)
+            rect = QRectF(left, y + 6, bar_w, max(10, row_h - 16))
             path = QPainterPath()
             path.addRoundedRect(rect, 6, 6)
             painter.fillPath(path, TEAL)
@@ -149,7 +168,7 @@ class CandidateBarChart(_ChartBase):
             painter.drawText(
                 QRectF(rect.right() + 8, y, 52, row_h - 8),
                 Qt.AlignmentFlag.AlignVCenter,
-                f"{item['votes']:,}",
+                f"{votes:,}",
             )
 
 
